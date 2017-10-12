@@ -3,14 +3,18 @@ using System.Collections.Generic;
 using UnityEngine;
 using Leap;
 using Leap.Unity;
+using UnityEngine.Windows.Speech;
 
 public class UnityChanBehavior : MonoBehaviour
 {
+    
 
     Animator anim;
+    [SerializeField] Controller controller;
     CharacterController charaController;
-    [SerializeField] IHandModel leftHandModel, rightHandModel;
-    Hand activeHand;
+    List<Hand> hands;
+    public IHandModel handModel;
+    Hand hand;
     Vector lastPalmPosition;
 
     float move;
@@ -18,6 +22,7 @@ public class UnityChanBehavior : MonoBehaviour
     public float speed = 6.0F;
     public float gravity = 20.0F;
 
+    int kickHash = Animator.StringToHash("kick");
     int jumpHash = Animator.StringToHash("Jump");
     int runStateHash = Animator.StringToHash("Base Layer.Locomotion");
 
@@ -26,62 +31,58 @@ public class UnityChanBehavior : MonoBehaviour
     {
         anim = GetComponent<Animator>();
         //Hand hand = new Hand();
-        charaController = gameObject.GetComponent<CharacterController>();       
+        charaController = gameObject.GetComponent<CharacterController>();
+
 
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (leftHandModel.isActiveAndEnabled == true)
-            activeHand = leftHandModel.GetLeapHand();
-        if(rightHandModel.isActiveAndEnabled == true)
-            activeHand = rightHandModel.GetLeapHand();
-        if (rightHandModel.isActiveAndEnabled == false && leftHandModel.isActiveAndEnabled == false)
-            activeHand = null;
-
-        //Debug.Log(activeHand + " position is : " + activeHand.PalmPosition);
-        Debug.Log(activeHand);
+        hand = handModel.GetLeapHand();
+        Debug.Log(hand + " position is : " + hand.PalmPosition);
         
-        if(activeHand == null)
-            anim.SetFloat("Speed", 0f);
-        else if (activeHand.PalmPosition.z + 1.45f * 50 > 0.4)
+
+        if (hand.PalmPosition.z + 1.45f * 50 > 0.4)
         {
-            move = (activeHand.PalmPosition.z + 1.45f) * 100;
+
+            move = (hand.PalmPosition.z + 1.45f) * 100;
+            if(move < 0)
+            {
+                move = move / 50;
+            }
+
+
             anim.SetFloat("Speed", move);
             moveDirection = Vector3.forward*(move/100);
 
             //pour tourner
             
-            if (activeHand.PalmPosition.x*100 < - 0.4)
+            if ( hand.PalmPosition.x*100 < - 0.4)
             {
                 //Debug.Log(hand.PalmPosition.x * 100);
-                float alpha = (float) System.Math.Atan(activeHand.PalmPosition.x / activeHand.PalmPosition.z);
+                float alpha = (float) System.Math.Atan(hand.PalmPosition.x / hand.PalmPosition.z);
                 gameObject.transform.Rotate(0, -alpha*4, 0);
             }
 
-            if (activeHand.PalmPosition.x * 100 > 0.4)
+            if (hand.PalmPosition.x * 100 > 0.4)
             {
                 //Debug.Log(hand.PalmPosition.x * 100);
-                float alpha = (float)System.Math.Atan(activeHand.PalmPosition.x / activeHand.PalmPosition.z);
+                float alpha = (float)System.Math.Atan(hand.PalmPosition.x / hand.PalmPosition.z);
                 gameObject.transform.Rotate(0, -alpha*4, 0);
             }
 
             //pour avancer
-            if (moveDirection.z > 0)
-                transform.Translate(moveDirection);
-            else
-                transform.Translate(Vector3.back*0.02f);
+            transform.Translate(moveDirection);
         }
 
-        if ((activeHand.PalmPosition.y - 1f) > 0.2)
+        if ((hand.PalmPosition.y - 1f) > 0.2)
         {
 
             anim.SetTrigger(jumpHash);
 
         }
         else { anim.ResetTrigger(jumpHash); }
-
 
 
     }
